@@ -1,29 +1,63 @@
-import { Provider } from "react-redux";
-import { store } from "./store/store";
-import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import TodoListScreen from "./screens/TodoListScreen";
-import TodoDetailsScreen from "./screens/TodoDetailsScreen";
+import { useEffect, useState, useContext } from "react";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { initDB } from "./services/database";
+import { ThemeProvider, ThemeContext } from "./context/ThemeContext";
+import TodoListOfflineScreen from "./screens/TodoListOfflineScreen";
 
-const Stack = createNativeStackNavigator();
+function MainApp() {
+  const { theme } = useContext(ThemeContext);
 
-export default function App() {
   return (
-    <Provider store={store}>
-      <NavigationContainer>
-        <Stack.Navigator>
-          <Stack.Screen
-            name="TodoList"
-            component={TodoListScreen}
-            options={{ title: "Liste des tâches" }}
-          />
-          <Stack.Screen
-            name="TodoDetails"
-            component={TodoDetailsScreen}
-            options={{ title: "Détails" }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </Provider>
+    <View
+      style={[
+        styles.container,
+        theme === "dark" ? styles.dark : styles.light,
+      ]}
+    >
+      <TodoListOfflineScreen />
+    </View>
   );
 }
+
+export default function App() {
+  const [dbReady, setDbReady] = useState(false);
+
+  useEffect(() => {
+    const prepareDb = async () => {
+      await initDB(); // attendre SQLite
+      setDbReady(true); // OK pour afficher l’app
+    };
+    prepareDb();
+  }, []);
+
+  if (!dbReady) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <ThemeProvider>
+      <MainApp />
+    </ThemeProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: 40,
+  },
+  center: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  light: {
+    backgroundColor: "#ffffff",
+  },
+  dark: {
+    backgroundColor: "#121212",
+  },
+});
